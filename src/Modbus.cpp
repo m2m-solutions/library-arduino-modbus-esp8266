@@ -8,7 +8,14 @@
 #ifdef MB_GLOBAL_REGS
  std::vector<TRegister> _regs;
  std::vector<TCallback> _callbacks;
+ std::vector<TFileOp> _files;
 #endif
+
+Modbus::ResultCode Modbus::fileOp(uint16_t fileNum, Modbus::FunctionCode fc, uint8_t* frame, uint16_t recNum, uint16_t recLen) {
+    std::vector<TFileOp>::iterator it = std::find_if(_files.begin(), _files.end(), [fileNum](TFileOp& fl){return fl.number == fileNum;});
+    if (it == _files.end()) return EX_ILLEGAL_ADDRESS;
+    return it->cb(fc, frame, recNum, recLen);
+}
 
 uint16_t Modbus::callback(TRegister* reg, uint16_t val, TCallback::CallbackType t) {
     uint16_t newVal = val;
@@ -178,6 +185,57 @@ void Modbus::slavePDU(uint8_t* frame) {
                 successResponce(COIL(field1), field2, fcode);
                 _reply = REPLY_NORMAL;
             }
+        break;
+
+        case FC_READ_FILE_REC:
+            if (frame[1] < 0x07 || frame[1] > 0xF5) {   // Wrong request data size
+                exceptionResponse(fcode, EX_ILLEGAL_VALUE);
+                return;  
+            }
+            {
+            uint8_t bufSize = 2;    // 2 bytes for frame header
+            fileRec* recs = (fileRec*)frame + 2;   // Begin of sub-recs blocks
+            uint8_t recsCount = frame[1] / sizeof(fileRec); // Count of sub-rec blocks
+            for (uint8_t p = 0; p < recsCount; p++) {   // Calc output buffer size required
+                // Normalize uint16 (should add check big/lite one day)
+                recs[p].fileNum = __bswap_16(recs[p].fileNum);
+                recs[p].fileNum = __bswap_16(recs[p].recNum);
+                recs[p].fileNum = __bswap_16(recs[p].recLen);
+                if (recs[p].refType != 0x06 || recs[p].recNum > 0x270F) { // Wrong ref type or count of records
+                    exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
+                    return;
+                }  
+                bufSize += recs[p].recLen * 2 + 2;   // 4 bytes for header + data
+            }
+            if (bufSize > MB_MAX_FRAME) {  // Frame to return too large
+                exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
+                return;  
+            }
+
+            uint8_t* srcFrame = _frame;
+            _frame = (uint8_t*)malloc(bufSize);
+            if (!_frame) {
+                exceptionResponse(fcode, EX_SLAVE_FAILURE);
+                return;
+            }
+            uint8_t* data = _frame + 2;
+            for (uint8_t p = 0; p < recsCount; p++) {
+                ResultCode res = fileOp(recs[p].fileNum, fcode, data + 2, recs[p].recNum, recs[p].recLen);
+                if (res != EX_SUCCESS) {    // File read failed
+                    free(srcFrame);
+                    exceptionResponse(fcode, res);
+                    return;  
+                }
+                data[0] = recs[p].recLen * 2 + 1;
+                data[1] = 0x06;
+                data += recs[p].recLen * 2 + 2;
+            }
+            _frame[0] = fcode;
+            _frame[1] = bufSize;
+            }
+        break;
+
+        case FC_WRITE_FILE_REC:
         break;
 
         default:
@@ -542,6 +600,30 @@ void Modbus::masterPDU(uint8_t* frame, uint8_t* sourceFrame, TAddress startreg, 
         case FC_WRITE_COIL:
         break;
         case FC_WRITE_COILS:
+        break;
+        case FC_READ_FILE_REC:
+        // Should check if byte order swap needed
+            if (frame[1] < 0x07 || frame[1] > 0xF5) {   // Wrong request data size
+                _reply = EX_ILLEGAL_VALUE;
+                return;  
+            }
+            {
+            uint8_t* data = frame + 2;
+            uint8_t* eoFrame = frame + frame[1];
+            while (data < eoFrame) {
+                //data[0] - sub-req length
+                //data[1] = 0x06
+                if (data[1] != 0x06 || data[0] < 0x07 || data[0] > 0xF5 || data + data[0] > eoFrame) {   // Wrong request data size
+                    _reply = EX_ILLEGAL_VALUE;
+                    return;  
+                }
+                memcpy(output, data + 2, data[0]);
+                data += data[0] + 1;
+                output += data[0] - 1;
+            }
+            }
+        break;
+        case FC_WRITE_FILE_REC:
         break;
         default:
 		_reply = EX_GENERAL_FAILURE;

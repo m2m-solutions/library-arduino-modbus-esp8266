@@ -79,9 +79,15 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 - Test multiple Modbus* instances
 - Implement eventSource() for ModbusRTU
 + Documentation changes
-// ToDo later
-- 0x14 - Read File Records function
+// 3.1.0-DEVEL
++ 0x14 - Read File Records function
+- Test 0x14
 - 0x15 - Write File Records function
+- Test 0x15
+- Basic example
+- FW update exmple
+- Slave. slavePDU use early exit by return where possible
+// 3.2.0-DEVEL
 - 0x16 - Write Mask Register function
 - 0x17 - Read/Write Registers function
 - 0x08 - Serial Diagnostics functions

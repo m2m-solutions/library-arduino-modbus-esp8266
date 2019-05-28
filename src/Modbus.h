@@ -1,7 +1,7 @@
 /*
     Modbuc.h - Header for Modbus Base Library
     Copyright (C) 2014 Andr� Sarmento Barbosa
-                  2017-2018 Alexander Emelianov (a.m.emelianov@gmail.com)
+                  2017-2019 Alexander Emelianov (a.m.emelianov@gmail.com)
 */
 #pragma once
 
@@ -17,13 +17,15 @@
 #endif
 
 
-#define MB_GLOBAL_REGS
+//#define MB_GLOBAL_REGS
+//#define MB_FILES
 #define MB_MAX_REGS     32
-#define MB_MAX_FRAME   128
+#define MB_MAX_FRAME   253
 #define COIL(n) (TAddress){TAddress::COIL, n}
 #define ISTS(n) (TAddress){TAddress::ISTS, n}
 #define IREG(n) (TAddress){TAddress::IREG, n}
 #define HREG(n) (TAddress){TAddress::HREG, n}
+#define FILE(n) (TAddress){TAddress::FILE, n}
 #define BIT_VAL(v) (v?0xFF00:0x0000)
 #define BIT_BOOL(v) (v==0xFF00)
 #define COIL_VAL(v) (v?0xFF00:0x0000)
@@ -35,11 +37,12 @@
 #define cbDefault nullptr
 
 struct TRegister;
+struct TFileOp;
 
 typedef uint16_t (*cbModbus)(TRegister* reg, uint16_t val); // Callback function Type
 
 struct TAddress {
-    enum RegType {COIL, ISTS, IREG, HREG};
+    enum RegType {COIL, ISTS, IREG, HREG, FILE};
     RegType type;
     uint16_t address;
     bool operator==(const TAddress &obj) const { // TAddress == TAddress
@@ -196,9 +199,17 @@ class Modbus {
             REPLY_ERROR          = 0x04,
             REPLY_UNEXPECTED     = 0x05
         };
+        // File sub-req helper structure
+        struct fileRec {
+            uint8_t refType;
+            uint16_t fileNum;
+            uint16_t recNum;
+            uint16_t recLen;
+        };
     #ifndef MB_GLOBAL_REGS
         std::vector<TRegister> _regs;
         std::vector<TCallback> _callbacks;
+        std::vector<TFileOp> _files;
     #endif
         uint8_t*  _frame = nullptr;
         uint16_t  _len = 0;
@@ -206,6 +217,7 @@ class Modbus {
         bool cbEnabled = true;
         uint16_t callback(TRegister* reg, uint16_t val, TCallback::CallbackType t);
         TRegister* searchRegister(TAddress addr);
+        ResultCode fileOp(uint16_t fileNum, FunctionCode fc, uint8_t* frame, uint16_t recNum, uint16_t recLen);
         void exceptionResponse(FunctionCode fn, ResultCode excode); // Fills _frame with response
         void successResponce(TAddress startreg, uint16_t numoutputs, FunctionCode fn);  // Fills frame with response
         void slavePDU(uint8_t* frame);    //For Slave
@@ -223,6 +235,22 @@ class Modbus {
         // numregs - number of registers
         // fn - Modbus function
         // data - if null use local registers. Otherwise use data from array to erite to slave
+        bool readSlaveFile(uint16_t fileNum, uint16_t startRec, uint16_t len, FunctionCode fn) {
+            free(_frame);
+	        _len = 4 + 2 * len;
+	        _frame = (uint8_t*) malloc(_len);
+            if (!_frame) return false;
+	        _frame[0] = fn;
+	        _frame[1] = len - 1;
+            _frame[2] = 0x06;
+	        _frame[3] = fileNum >> 8;
+	        _frame[4] = fileNum & 0x00FF;
+            _frame[5] = startRec >> 8;
+	        _frame[6] = startRec & 0x00FF;
+            _frame[7] = len >> 8;
+	        _frame[8] = len & 0x00FF;
+            return true;
+        }
 
         bool addReg(TAddress address, uint16_t value = 0, uint16_t numregs = 1);
         bool Reg(TAddress address, uint16_t value);
@@ -236,3 +264,8 @@ class Modbus {
 };
 
 typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, void* data); // Callback skeleton for requests
+typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint8_t* frame, uint16_t recNumber, uint16_t recLength);
+struct TFileOp {
+    uint16_t number;
+    cbModbusFileOp cb;
+};

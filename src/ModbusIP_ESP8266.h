@@ -106,6 +106,13 @@ class ModbusIP : public Modbus {
 	uint16_t pullCoilToIsts(IPAddress ip, uint16_t offset, uint16_t startreg, uint16_t numregs = 1, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
 	uint16_t pushIstsToCoil(IPAddress ip, uint16_t to, uint16_t from, uint16_t numregs = 1, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
 	uint16_t pushIregToHreg(IPAddress ip, uint16_t to, uint16_t from, uint16_t numregs = 1, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
+
+	uint16_t readFileRec(IPAddress ip, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT) {
+		if (startRec > 0x270F) return false;
+		readSlaveFile(fileNum, startRec, len, FC_READ_FILE_REC);
+		return send(ip, FILE(0), cb, unit, data);
+	}
+	//uint16_t readFileRec(IPAddress ip, uint16_t fileNum, uint16_t* startRec, uint16_t* len, uint8_t* data);
 	/*
 	uint16_t maskHreg(IPAddress ip, uint16_t offset, uint16_t andMask, uint16_t orMask, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
 	uint16_t pushPullIreg
