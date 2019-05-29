@@ -53,9 +53,9 @@ bool ModbusRTU::begin(HardwareSerial* port, uint32_t baud, uint16_t format, int1
 	maxRegs = port->setRxBufferSize(256) / 2 - 3;
     _port = port;
     _txPin = txPin;
-    if (txPin >= 0) {
-        pinMode(txPin, OUTPUT);
-        digitalWrite(txPin, LOW);
+    if (_txPin >= 0) {
+        pinMode(_txPin, OUTPUT);
+        digitalWrite(_txPin, LOW);
     }
     if (baud > 19200) {
         _t = 2;
@@ -93,9 +93,9 @@ bool ModbusRTU::rawSend(uint8_t slaveId, uint8_t* frame, uint8_t len) {
     _port->write(newCrc >> 8);	//Send CRC 
     _port->write(newCrc & 0xFF);//Send CRC
     _port->flush();
-    delay(_t);
     if (_txPin >= 0)
         digitalWrite(_txPin, LOW);
+	delay(_t);
 	return true;
 }
 
@@ -146,7 +146,9 @@ void ModbusRTU::task() {
       _len = 0;
       return;
     }
-    for (uint8_t i=0 ; i < _len ; i++) _frame[i] = _port->read();   // read data + crc
+    for (uint8_t i=0 ; i < _len ; i++) {_frame[i] = _port->read();   // read data + crc
+	Serial.printf("%02x\n", _frame[i]);
+	}
 	//_port->readBytes(_frame, _len);
     u_int frameCrc = ((_frame[_len - 2] << 8) | _frame[_len - 1]); // Last two byts = crc
     _len = _len - 2;    // Decrease by CRC 2 bytes

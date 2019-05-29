@@ -17,8 +17,8 @@
 #endif
 
 
-//#define MB_GLOBAL_REGS
-//#define MB_FILES
+#define MB_GLOBAL_REGS
+#define MB_FILES
 #define MB_MAX_REGS     32
 #define MB_MAX_FRAME   253
 #define COIL(n) (TAddress){TAddress::COIL, n}
@@ -42,7 +42,7 @@ struct TFileOp;
 typedef uint16_t (*cbModbus)(TRegister* reg, uint16_t val); // Callback function Type
 
 struct TAddress {
-    enum RegType {COIL, ISTS, IREG, HREG, FILE};
+    enum RegType {COIL, ISTS, IREG, HREG, FILE};    // RegType FILE is used only internally for calls generalization
     RegType type;
     uint16_t address;
     bool operator==(const TAddress &obj) const { // TAddress == TAddress
@@ -108,7 +108,7 @@ class Modbus {
             FC_DIAGNOSTICS      = 0x08, // Not implemented. Diagnostics (Serial Line only)
             FC_WRITE_COILS      = 0x0F, // Write Multiple Coils (Outputs)
             FC_WRITE_REGS       = 0x10, // Write block of contiguous registers
-            FC_READ_FILE_REC    = 0x14, // Not implemented. Read File Record
+            FC_READ_FILE_REC    = 0x14, // Read File Record
             FC_WRITE_FILE_REC   = 0x15, // Not implemented. Write File Record
             FC_MASKWRITE_REG    = 0x16, // Not implemented. Mask Write Register
             FC_READWRITE_REGS   = 0x17  // Not implemented. Read/Write Multiple registers
