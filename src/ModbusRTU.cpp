@@ -124,6 +124,7 @@ void ModbusRTU::task() {
 
     uint8_t address = _port->read(); //first byte of frame = address
     _len--; // Decrease by slaveId byte
+	Serial.println(address);
     if (isMaster && _slaveId == 0) {    // Check is slaveId is set
         for (uint8_t i=0 ; i < _len ; i++) _port->read();   // Skip packet if is not expected
         _len = 0;
@@ -141,11 +142,13 @@ void ModbusRTU::task() {
       _len = 0;
       return;
     }
-    for (uint8_t i=0 ; i < _len ; i++) _frame[i] = _port->read();   // read data + crc
+    for (uint8_t i=0 ; i < _len ; i++) { _frame[i] = _port->read();   // read data + crc
+	Serial.printf("%02X\n", _frame[i]); }
 	//_port->readBytes(_frame, _len);
     u_int frameCrc = ((_frame[_len - 2] << 8) | _frame[_len - 1]); // Last two byts = crc
     _len = _len - 2;    // Decrease by CRC 2 bytes
     if (frameCrc != crc16(address, _frame, _len)) {  // CRC Check
+	Serial.println("WrongCRC");
         _len = 0;   // Cleanup if wrong crc
         free(_frame);
         _frame = nullptr;

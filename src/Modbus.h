@@ -17,7 +17,7 @@
 #endif
 
 
-#define MB_GLOBAL_REGS
+//#define MB_GLOBAL_REGS
 #define MB_FILES
 #define MB_MAX_REGS     32
 #define MB_MAX_FRAME   253
@@ -199,13 +199,6 @@ class Modbus {
             REPLY_ERROR          = 0x04,
             REPLY_UNEXPECTED     = 0x05
         };
-        // File sub-req helper structure
-        struct fileRec {
-            uint8_t refType;
-            uint16_t fileNum;
-            uint16_t recNum;
-            uint16_t recLen;
-        };
     #ifndef MB_GLOBAL_REGS
         std::vector<TRegister> _regs;
         std::vector<TCallback> _callbacks;
@@ -237,11 +230,11 @@ class Modbus {
         // data - if null use local registers. Otherwise use data from array to erite to slave
         bool readSlaveFile(uint16_t fileNum, uint16_t startRec, uint16_t len, FunctionCode fn) {
             free(_frame);
-	        _len = 4 + 2 * len;
+	        _len = 9;
 	        _frame = (uint8_t*) malloc(_len);
             if (!_frame) return false;
 	        _frame[0] = fn;
-	        _frame[1] = len - 1;
+	        _frame[1] = _len - 2;
             _frame[2] = 0x06;
 	        _frame[3] = fileNum >> 8;
 	        _frame[4] = fileNum & 0x00FF;
@@ -261,6 +254,8 @@ class Modbus {
         bool onSet(TAddress address, cbModbus cb = nullptr, uint16_t numregs = 1);
         bool removeOnSet(TAddress address, cbModbus cb = nullptr, uint16_t numregs = 1);
         bool removeOnGet(TAddress address, cbModbus cb = nullptr, uint16_t numregs = 1);
+    public:
+        bool onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint8_t*, uint16_t, uint16_t));
 };
 
 typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, void* data); // Callback skeleton for requests

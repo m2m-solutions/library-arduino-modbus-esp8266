@@ -11,6 +11,13 @@
  std::vector<TFileOp> _files;
 #endif
 
+bool Modbus::onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint8_t*, uint16_t, uint16_t)) {
+    TFileOp tmp;
+    tmp.number = num;
+    tmp.cb = cb;
+    _files.push_back(tmp);
+}
+
 Modbus::ResultCode Modbus::fileOp(uint16_t fileNum, Modbus::FunctionCode fc, uint8_t* frame, uint16_t recNum, uint16_t recLen) {
     std::vector<TFileOp>::iterator it = std::find_if(_files.begin(), _files.end(), [fileNum](TFileOp& fl){return fl.number == fileNum;});
     if (it == _files.end()) return EX_ILLEGAL_ADDRESS;
@@ -193,42 +200,50 @@ void Modbus::slavePDU(uint8_t* frame) {
                 return;  
             }
             {
+                Serial.println("FILE");
             uint8_t bufSize = 2;    // 2 bytes for frame header
-            fileRec* recs = (fileRec*)frame + 2;   // Begin of sub-recs blocks
-            uint8_t recsCount = frame[1] / sizeof(fileRec); // Count of sub-rec blocks
+            uint8_t* recs = frame + 2;   // Begin of sub-recs blocks
+            uint8_t recsCount = frame[1] / 7; // Count of sub-rec blocks
             for (uint8_t p = 0; p < recsCount; p++) {   // Calc output buffer size required
-                // Normalize uint16 (should add check big/lite one day)
-                recs[p].fileNum = __bswap_16(recs[p].fileNum);
-                recs[p].fileNum = __bswap_16(recs[p].recNum);
-                recs[p].fileNum = __bswap_16(recs[p].recLen);
-                if (recs[p].refType != 0x06 || recs[p].recNum > 0x270F) { // Wrong ref type or count of records
+                //uint16_t fileNum = (uint16_t)recs[1] << 8 | (uint16_t)recs[2];
+                uint16_t recNum = (uint16_t)recs[3] << 8 | (uint16_t)recs[4];
+                uint16_t recLen = (uint16_t)recs[5] << 8 | (uint16_t)recs[6];
+                //Serial.printf("%d, %d, %d\n", fileNum, recNum, recLen);
+                if (recs[0] != 0x06 || recNum > 0x270F) { // Wrong ref type or count of records
                     exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
                     return;
                 }  
-                bufSize += recs[p].recLen * 2 + 2;   // 4 bytes for header + data
+                bufSize += recLen * 2 + 2;   // 4 bytes for header + data
+                recs += 7;
             }
             if (bufSize > MB_MAX_FRAME) {  // Frame to return too large
                 exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
                 return;  
             }
-
+            //Serial.println(bufSize);
             uint8_t* srcFrame = _frame;
             _frame = (uint8_t*)malloc(bufSize);
             if (!_frame) {
                 exceptionResponse(fcode, EX_SLAVE_FAILURE);
                 return;
             }
+            _len = bufSize;
+            recs = frame + 2;   // Begin of sub-recs blocks
             uint8_t* data = _frame + 2;
             for (uint8_t p = 0; p < recsCount; p++) {
-                ResultCode res = fileOp(recs[p].fileNum, fcode, data + 2, recs[p].recNum, recs[p].recLen);
+                uint16_t fileNum = (uint16_t)recs[1] << 8 | (uint16_t)recs[2];
+                uint16_t recNum = (uint16_t)recs[3] << 8 | (uint16_t)recs[4];
+                uint16_t recLen = (uint16_t)recs[5] << 8 | (uint16_t)recs[6];
+                ResultCode res = fileOp(fileNum, fcode, data + 2, recNum, recLen);
                 if (res != EX_SUCCESS) {    // File read failed
                     free(srcFrame);
                     exceptionResponse(fcode, res);
                     return;  
                 }
-                data[0] = recs[p].recLen * 2 + 1;
+                data[0] = recLen * 2 + 1;
                 data[1] = 0x06;
-                data += recs[p].recLen * 2 + 2;
+                data += recLen * 2 + 2;
+                recs += 7;
             }
             _frame[0] = fcode;
             _frame[1] = bufSize;
