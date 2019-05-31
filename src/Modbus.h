@@ -1,5 +1,5 @@
 /*
-    Modbuc.h - Header for Modbus Base Library
+    Modbus.h - Header for Modbus Base Library
     Copyright (C) 2014 Andr� Sarmento Barbosa
                   2017-2019 Alexander Emelianov (a.m.emelianov@gmail.com)
 */
@@ -18,7 +18,7 @@
 
 
 //#define MB_GLOBAL_REGS
-#define MB_FILES
+#define MODBUS_FILES
 #define MB_MAX_REGS     32
 #define MB_MAX_FRAME   253
 #define COIL(n) (TAddress){TAddress::COIL, n}
@@ -37,7 +37,9 @@
 #define cbDefault nullptr
 
 struct TRegister;
+#if defined(MODBUS_FILES)
 struct TFileOp;
+#endif
 
 typedef uint16_t (*cbModbus)(TRegister* reg, uint16_t val); // Callback function Type
 
@@ -109,7 +111,7 @@ class Modbus {
             FC_WRITE_COILS      = 0x0F, // Write Multiple Coils (Outputs)
             FC_WRITE_REGS       = 0x10, // Write block of contiguous registers
             FC_READ_FILE_REC    = 0x14, // Read File Record
-            FC_WRITE_FILE_REC   = 0x15, // Not implemented. Write File Record
+            FC_WRITE_FILE_REC   = 0x15, // Write File Record
             FC_MASKWRITE_REG    = 0x16, // Not implemented. Mask Write Register
             FC_READWRITE_REGS   = 0x17  // Not implemented. Read/Write Multiple registers
         };
@@ -202,7 +204,9 @@ class Modbus {
     #ifndef MB_GLOBAL_REGS
         std::vector<TRegister> _regs;
         std::vector<TCallback> _callbacks;
+        #if defined(MODBUS_FILES)
         std::vector<TFileOp> _files;
+        #endif
     #endif
         uint8_t*  _frame = nullptr;
         uint16_t  _len = 0;
@@ -228,15 +232,16 @@ class Modbus {
         // numregs - number of registers
         // fn - Modbus function
         // data - if null use local registers. Otherwise use data from array to erite to slave
+        #if defined(MODBUS_FILES)
         bool readSlaveFile(uint16_t* fileNum, uint16_t* startRec, uint16_t* len, uint8_t count, FunctionCode fn) {
         // fileNum - sequental array of files numbers to read
         // startRec - array of strart records for each file
         // len - count of records to read in terms of register size (2 bytes) for each file
         // count - count of records to be compose in the single request
         // fn - Modbus function. Assumed to be 0x14
-            free(_frame);
 	        _len = count * 7 + 2;
             if (_len > MB_MAX_FRAME) return false;
+            free(_frame);
 	        _frame = (uint8_t*) malloc(_len);
             if (!_frame) return false;
 	        _frame[0] = fn;
@@ -261,12 +266,12 @@ class Modbus {
         // count - count of records to be compose in the single request
         // fn - Modbus function. Assumed to be 0x15
         // data - sequental set of data records
-            free(_frame);
 	        _len = 2;
             for (uint8_t i = 0; i < count; i++) {
                 _len += len[i] * 2 + 2;
             }
             if (_len > MB_MAX_FRAME) return false;
+            free(_frame);
 	        _frame = (uint8_t*) malloc(_len);
             if (!_frame) return false;
 	        _frame[0] = fn;
@@ -287,7 +292,7 @@ class Modbus {
             }
             return true;
         }
-
+        #endif
         bool addReg(TAddress address, uint16_t value = 0, uint16_t numregs = 1);
         bool Reg(TAddress address, uint16_t value);
         uint16_t Reg(TAddress address);
@@ -303,9 +308,11 @@ class Modbus {
 
 // Callback skeleton for requests
 typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, void* data);
+#if defined(MODBUS_FILES)
 // Callback skeleton for file read/write
 typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint8_t* frame, uint16_t recNumber, uint16_t recLength);
 struct TFileOp {
     uint16_t number;
     cbModbusFileOp cb;
 };
+#endif

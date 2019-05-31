@@ -224,6 +224,7 @@ void Modbus::slavePDU(uint8_t* frame) {
             uint8_t* srcFrame = _frame;
             _frame = (uint8_t*)malloc(bufSize);
             if (!_frame) {
+                free(srcFrame);
                 exceptionResponse(fcode, EX_SLAVE_FAILURE);
                 return;
             }
@@ -248,6 +249,7 @@ void Modbus::slavePDU(uint8_t* frame) {
             _frame[0] = fcode;
             _frame[1] = bufSize;
             _reply = REPLY_NORMAL;
+            free(srcFrame);
             }
         break;
 
