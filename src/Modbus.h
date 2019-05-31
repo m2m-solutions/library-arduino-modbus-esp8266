@@ -228,20 +228,26 @@ class Modbus {
         // numregs - number of registers
         // fn - Modbus function
         // data - if null use local registers. Otherwise use data from array to erite to slave
-        bool readSlaveFile(uint16_t fileNum, uint16_t startRec, uint16_t len, FunctionCode fn) {
+        bool readSlaveFile(uint16_t* fileNum, uint16_t* startRec, uint16_t* len, uint8_t count, FunctionCode fn) {
             free(_frame);
-	        _len = 9;
+	        _len = count * 7 + 2;
+            if (_len > MB_MAX_FRAME) return false;
 	        _frame = (uint8_t*) malloc(_len);
             if (!_frame) return false;
 	        _frame[0] = fn;
 	        _frame[1] = _len - 2;
-            _frame[2] = 0x06;
-	        _frame[3] = fileNum >> 8;
-	        _frame[4] = fileNum & 0x00FF;
-            _frame[5] = startRec >> 8;
-	        _frame[6] = startRec & 0x00FF;
-            _frame[7] = len >> 8;
-	        _frame[8] = len & 0x00FF;
+            uint8_t* subReq = _frame + 2;
+            for (uint8_t i = 0; i < count; i++) {
+                Serial.printf("%d, %d, %d\n", fileNum[i], startRec[i], len[i]);
+                subReq[0] = 0x06;
+	            subReq[1] = fileNum[i] >> 8;
+	            subReq[2] = fileNum[i] & 0x00FF;
+                subReq[3] = startRec[i] >> 8;
+	            subReq[4] = startRec[i] & 0x00FF;
+                subReq[5] = len[i] >> 8;
+	            subReq[6] = len[i] & 0x00FF;
+                subReq += 7;
+            }
             return true;
         }
 

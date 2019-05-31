@@ -73,9 +73,9 @@ class ModbusRTU : public Modbus {
 		uint16_t pushIregToHreg(uint8_t slaveId, uint16_t to, uint16_t from, uint16_t numregs = 1, cbTransaction cb = nullptr);
 
 		uint16_t readFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr) {
-		if (startRec > 0x270F) return false;
-		readSlaveFile(fileNum, startRec, len, FC_READ_FILE_REC);
-		return send(slaveId, FILE(0), cb, data);
-	}
+			if (startRec > 0x270F) return false;
+			readSlaveFile(&fileNum, &startRec, &len, 1, FC_READ_FILE_REC);
+			return send(slaveId, FILE(0), cb, data);
+		}
 
 };
