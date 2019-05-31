@@ -16,6 +16,7 @@ bool Modbus::onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode,
     tmp.number = num;
     tmp.cb = cb;
     _files.push_back(tmp);
+    return true;
 }
 
 Modbus::ResultCode Modbus::fileOp(uint16_t fileNum, Modbus::FunctionCode fc, uint8_t* frame, uint16_t recNum, uint16_t recLen) {
@@ -200,7 +201,6 @@ void Modbus::slavePDU(uint8_t* frame) {
                 return;  
             }
             {
-                Serial.println("FILE");
             uint8_t bufSize = 2;    // 2 bytes for frame header
             uint8_t* recs = frame + 2;   // Begin of sub-recs blocks
             uint8_t recsCount = frame[1] / 7; // Count of sub-rec blocks
@@ -247,10 +247,37 @@ void Modbus::slavePDU(uint8_t* frame) {
             }
             _frame[0] = fcode;
             _frame[1] = bufSize;
+            _reply = REPLY_NORMAL;
             }
         break;
 
-        case FC_WRITE_FILE_REC:
+        case FC_WRITE_FILE_REC: {
+            if (frame[1] < 0x09 || frame[1] > 0xFB) {   // Wrong request data size
+                exceptionResponse(fcode, EX_ILLEGAL_VALUE);
+                return;  
+            }
+            uint8_t* recs = frame + 2;   // Begin of sub-recs blocks
+            while (recs < frame + frame[1]) {
+                if (recs[0] != 0x06) {
+                    exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
+                    return;  
+                }
+                uint16_t fileNum = (uint16_t)recs[1] << 8 | (uint16_t)recs[2];
+                uint16_t recNum = (uint16_t)recs[3] << 8 | (uint16_t)recs[4];
+                uint16_t recLen = (uint16_t)recs[5] << 8 | (uint16_t)recs[6];
+                if (recs + recLen * 2 > frame + frame[1]) {
+                    exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
+                    return;
+                }
+                ResultCode res = fileOp(fileNum, fcode, recs + 7, recNum, recLen);
+                if (res != EX_SUCCESS) {    // File write failed
+                    exceptionResponse(fcode, res);
+                    return;
+                }
+                recs += 7 + recLen * 2;
+            }
+        }
+        _reply = REPLY_ECHO;
         break;
 
         default:

@@ -165,6 +165,22 @@ uint16_t readIreg(uint8_t slaveId, uint16_t offset, uint16_t* value, uint16_t nu
 
 Read values from remote Hreg/Coil/Ireg/Ists to array.
 
+### File records operations
+
+```c
+uint16_t readFileRec(IPAddress ip, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
+uint16_t readFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
+```
+
+Read single file record from slave. startRec and len is in terms of registers (2 bytes).
+
+```c
+uint16_t writeFileRec(IPAddress ip, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
+uint16_t writeFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
+```
+
+Write single file record from slave. startRec and len is in terms of registers (2 bytes).
+
 ## Callbacks API
 
 ```c

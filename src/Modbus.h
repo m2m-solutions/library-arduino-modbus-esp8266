@@ -229,6 +229,11 @@ class Modbus {
         // fn - Modbus function
         // data - if null use local registers. Otherwise use data from array to erite to slave
         bool readSlaveFile(uint16_t* fileNum, uint16_t* startRec, uint16_t* len, uint8_t count, FunctionCode fn) {
+        // fileNum - sequental array of files numbers to read
+        // startRec - array of strart records for each file
+        // len - count of records to read in terms of register size (2 bytes) for each file
+        // count - count of records to be compose in the single request
+        // fn - Modbus function. Assumed to be 0x14
             free(_frame);
 	        _len = count * 7 + 2;
             if (_len > MB_MAX_FRAME) return false;
@@ -238,7 +243,6 @@ class Modbus {
 	        _frame[1] = _len - 2;
             uint8_t* subReq = _frame + 2;
             for (uint8_t i = 0; i < count; i++) {
-                Serial.printf("%d, %d, %d\n", fileNum[i], startRec[i], len[i]);
                 subReq[0] = 0x06;
 	            subReq[1] = fileNum[i] >> 8;
 	            subReq[2] = fileNum[i] & 0x00FF;
@@ -247,6 +251,39 @@ class Modbus {
                 subReq[5] = len[i] >> 8;
 	            subReq[6] = len[i] & 0x00FF;
                 subReq += 7;
+            }
+            return true;
+        }
+        bool writeSlaveFile(uint16_t* fileNum, uint16_t* startRec, uint16_t* len, uint8_t count, FunctionCode fn, uint8_t* data) {
+        // fileNum - sequental array of files numbers to read
+        // startRec - array of strart records for each file
+        // len - count of records to read in terms of register size (2 bytes) for each file
+        // count - count of records to be compose in the single request
+        // fn - Modbus function. Assumed to be 0x15
+        // data - sequental set of data records
+            free(_frame);
+	        _len = 2;
+            for (uint8_t i = 0; i < count; i++) {
+                _len += len[i] * 2 + 2;
+            }
+            if (_len > MB_MAX_FRAME) return false;
+	        _frame = (uint8_t*) malloc(_len);
+            if (!_frame) return false;
+	        _frame[0] = fn;
+	        _frame[1] = _len - 2;
+            uint8_t* subReq = _frame + 2;
+            for (uint8_t i = 0; i < count; i++) {
+                subReq[0] = 0x06;
+	            subReq[1] = fileNum[i] >> 8;
+	            subReq[2] = fileNum[i] & 0x00FF;
+                subReq[3] = startRec[i] >> 8;
+	            subReq[4] = startRec[i] & 0x00FF;
+                subReq[5] = len[i] >> 8;
+	            subReq[6] = len[i] & 0x00FF;
+                uint8_t clen = len[i] * 2;
+                memcpy(subReq + 7, data, clen);
+                subReq += 7 + clen;
+                data += clen;
             }
             return true;
         }
@@ -264,7 +301,9 @@ class Modbus {
         bool onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint8_t*, uint16_t, uint16_t));
 };
 
-typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, void* data); // Callback skeleton for requests
+// Callback skeleton for requests
+typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, void* data);
+// Callback skeleton for file read/write
 typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint8_t* frame, uint16_t recNumber, uint16_t recLength);
 struct TFileOp {
     uint16_t number;

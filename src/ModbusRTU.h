@@ -13,7 +13,7 @@
 
 #define MODBUSRTU_BROADCAST 0
 #define MB_RESERVE 248
-#define MB_SERIAL_BUFFER 128
+#define MB_SERIAL_BUFFER 256
 #define MB_MAX_TIME 10
 #define MODBUSRTU_TIMEOUT 1000
 #define MODBUSRTU_ADD_REG
@@ -76,6 +76,11 @@ class ModbusRTU : public Modbus {
 			if (startRec > 0x270F) return false;
 			readSlaveFile(&fileNum, &startRec, &len, 1, FC_READ_FILE_REC);
 			return send(slaveId, FILE(0), cb, data);
+		}
+		uint16_t writeFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr) {
+			if (startRec > 0x270F) return false;
+			writeSlaveFile(&fileNum, &startRec, &len, 1, FC_WRITE_FILE_REC, data);
+			return send(slaveId, FILE(0), cb);
 		}
 
 };
