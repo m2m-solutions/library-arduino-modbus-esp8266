@@ -11,7 +11,7 @@
  std::vector<TFileOp> _files;
 #endif
 
-bool Modbus::onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint8_t*, uint16_t, uint16_t)) {
+bool Modbus::onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint16_t, uint16_t, uint16_t, uint8_t*)) {
     TFileOp tmp;
     tmp.number = num;
     tmp.cb = cb;
@@ -19,10 +19,10 @@ bool Modbus::onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode,
     return true;
 }
 
-Modbus::ResultCode Modbus::fileOp(uint16_t fileNum, Modbus::FunctionCode fc, uint8_t* frame, uint16_t recNum, uint16_t recLen) {
+Modbus::ResultCode Modbus::fileOp(Modbus::FunctionCode fc, uint16_t fileNum, uint16_t recNum, uint16_t recLen, uint8_t* frame) {
     std::vector<TFileOp>::iterator it = std::find_if(_files.begin(), _files.end(), [fileNum](TFileOp& fl){return fl.number == fileNum;});
     if (it == _files.end()) return EX_ILLEGAL_ADDRESS;
-    return it->cb(fc, frame, recNum, recLen);
+    return it->cb(fc, fileNum, recNum, recLen, frame);
 }
 
 uint16_t Modbus::callback(TRegister* reg, uint16_t val, TCallback::CallbackType t) {
@@ -235,7 +235,7 @@ void Modbus::slavePDU(uint8_t* frame) {
                 uint16_t fileNum = (uint16_t)recs[1] << 8 | (uint16_t)recs[2];
                 uint16_t recNum = (uint16_t)recs[3] << 8 | (uint16_t)recs[4];
                 uint16_t recLen = (uint16_t)recs[5] << 8 | (uint16_t)recs[6];
-                ResultCode res = fileOp(fileNum, fcode, data + 2, recNum, recLen);
+                ResultCode res = fileOp(fcode, fileNum, recNum, recLen, data + 2);
                 if (res != EX_SUCCESS) {    // File read failed
                     free(srcFrame);
                     exceptionResponse(fcode, res);
@@ -271,7 +271,7 @@ void Modbus::slavePDU(uint8_t* frame) {
                     exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
                     return;
                 }
-                ResultCode res = fileOp(fileNum, fcode, recs + 7, recNum, recLen);
+                ResultCode res = fileOp(fcode, fileNum, recNum, recLen, recs + 7);
                 if (res != EX_SUCCESS) {    // File write failed
                     exceptionResponse(fcode, res);
                     return;

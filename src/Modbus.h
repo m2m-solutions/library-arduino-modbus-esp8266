@@ -214,7 +214,7 @@ class Modbus {
         bool cbEnabled = true;
         uint16_t callback(TRegister* reg, uint16_t val, TCallback::CallbackType t);
         TRegister* searchRegister(TAddress addr);
-        ResultCode fileOp(uint16_t fileNum, FunctionCode fc, uint8_t* frame, uint16_t recNum, uint16_t recLen);
+        ResultCode fileOp(FunctionCode fc, uint16_t fileNum, uint16_t recNum, uint16_t recLen, uint8_t* frame);
         void exceptionResponse(FunctionCode fn, ResultCode excode); // Fills _frame with response
         void successResponce(TAddress startreg, uint16_t numoutputs, FunctionCode fn);  // Fills frame with response
         void slavePDU(uint8_t* frame);    //For Slave
@@ -303,14 +303,14 @@ class Modbus {
         bool removeOnSet(TAddress address, cbModbus cb = nullptr, uint16_t numregs = 1);
         bool removeOnGet(TAddress address, cbModbus cb = nullptr, uint16_t numregs = 1);
     public:
-        bool onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint8_t*, uint16_t, uint16_t));
+        bool onFile(uint16_t num, Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint16_t, uint16_t, uint16_t, uint8_t*));
 };
 
 // Callback skeleton for requests
 typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, void* data);
 #if defined(MODBUS_FILES)
 // Callback skeleton for file read/write
-typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint8_t* frame, uint16_t recNumber, uint16_t recLength);
+typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint16_t fileNum, uint16_t recNumber, uint16_t recLength, uint8_t* frame);
 struct TFileOp {
     uint16_t number;
     cbModbusFileOp cb;

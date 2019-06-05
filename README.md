@@ -47,6 +47,9 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
   * 0x06 - Write Single Register
   * 0x0F - Write Multiple Coils
   * 0x10 - Write Multiple Registers
+  * 0x14 - **Read File Record**
+  * 0x15 - **Write File Record**
+
 * Callbacks for
   * Master connect (ModbusIP)
   * Master/Slave disconnect (ModbusIP)
@@ -83,7 +86,7 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 // 3.1.0-DEVEL
 + 0x14 - Read File Records function
 - Test 0x14
-- 0x15 - Write File Records function
++ 0x15 - Write File Records function
 - Test 0x15
 - Basic example
 - FW update exmple
