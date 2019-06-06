@@ -296,6 +296,7 @@ void Modbus::successResponce(TAddress startreg, uint16_t numoutputs, FunctionCod
     _frame[2] = startreg.address & 0x00FF;
     _frame[3] = numoutputs >> 8;
     _frame[4] = numoutputs & 0x00FF;
+    //_reply = REPLY_NORMAL;    // Should it be added?
 }
 
 void Modbus::exceptionResponse(FunctionCode fn, ResultCode excode) {
@@ -524,6 +525,7 @@ bool Modbus::writeSlaveWords(TAddress startreg, uint16_t to, uint16_t numregs, F
         } else {
             getMultipleWords(_frame + 6, startreg, numregs);
         }
+        // _reply = REPLY_NORMAL;   // Should it be added?
         return true;
     }
     _reply = REPLY_OFF;

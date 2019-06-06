@@ -83,6 +83,10 @@ bool ModbusRTU::rawSend(uint8_t slaveId, uint8_t* frame, uint8_t len) {
         digitalWrite(_txPin, HIGH);
         delay(1);
     }
+	for (uint8_t i = 0; i < len; i++) {
+		Serial.printf("%02X ", frame[i]);
+	}
+	Serial.println();
     _port->write(slaveId);  	//Send slaveId
     _port->write(frame, len); 	// Send PDU
     _port->write(newCrc >> 8);	//Send CRC 
