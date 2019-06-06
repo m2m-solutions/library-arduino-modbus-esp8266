@@ -282,6 +282,24 @@ void Modbus::slavePDU(uint8_t* frame) {
         _reply = REPLY_ECHO;
         break;
 
+        case FC_MASKWRITE_REG: {
+            //field1 = reg, field2 = AND mask
+            // Result = (Current Contents AND And_Mask) OR (Or_Mask AND (NOT And_Mask))
+            uint16_t orMask = (uint16_t)frame[5] << 8 | (uint16_t)frame[6];
+            uint16_t val = Hreg(field1);
+            val = (val && field2) || (orMask && !field2);
+            if (!Hreg(field1, val)) { //Check Address and execute (reg exists?)
+                exceptionResponse(fcode, EX_ILLEGAL_ADDRESS);
+                return;
+            }
+            if (Hreg(field1) != val) { //Check for failure
+                exceptionResponse(fcode, EX_SLAVE_FAILURE);
+                return;
+            }
+        }
+        _reply = REPLY_ECHO;
+        return;
+
         default:
             exceptionResponse(fcode, EX_ILLEGAL_FUNCTION);
     }
@@ -646,6 +664,8 @@ void Modbus::masterPDU(uint8_t* frame, uint8_t* sourceFrame, TAddress startreg, 
         case FC_WRITE_COIL:
         break;
         case FC_WRITE_COILS:
+        break;
+        case FC_MASKWRITE_REG:
         break;
         case FC_READ_FILE_REC:
         // Should check if byte order swap needed

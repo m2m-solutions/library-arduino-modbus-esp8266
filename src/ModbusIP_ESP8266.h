@@ -112,20 +112,38 @@ class ModbusIP : public Modbus {
 		readSlaveFile(&fileNum, &startRec, &len, 1, FC_READ_FILE_REC);
 		return send(ip, FILE(0), cb, unit, data);
 	}
-	//uint16_t readFileRec(IPAddress ip, uint16_t fileNum, uint16_t* startRec, uint16_t* len, uint8_t* data);
+	uint16_t writeFileRec(IPAddress ip, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr) {
+		if (startRec > 0x270F) return false;
+		writeSlaveFile(&fileNum, &startRec, &len, 1, FC_WRITE_FILE_REC, data);
+		return send(ip, FILE(0), cb);
+	}
+
+	uint16_t maskHreg(IPAddress ip, uint16_t offset, uint16_t andMask, uint16_t orMask, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT) {
+		free(_frame);
+		_len = 7;
+		_frame = (uint8_t*) malloc(_len);
+		_frame[0] = FC_MASKWRITE_REG;
+		_frame[1] = offset >> 8;
+		_frame[2] = offset & 0x00FF;
+		_frame[3] = andMask >> 8;
+		_frame[4] = andMask & 0x00FF;
+		_frame[5] = orMask >> 8;
+		_frame[6] = orMask & 0x00FF;
+		return send(ip, HREG(offset), cb, unit, nullptr, cb);	
+	}
+
 	/*
-	uint16_t maskHreg(IPAddress ip, uint16_t offset, uint16_t andMask, uint16_t orMask, cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
+	uint16_t readWriteHreg(IPAddress ip,
+		uint16_t readOffset, uint16_t* value, uint16_t numregs,
+		uint16_t writeOffset, uint16_t* value, uint16_t numregs,
+		cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
+
 	uint16_t pushPullIreg
-	uint16_t pushPullHreg
 	uint16_t pushIregPullToHreg
 	uint16_t pushHregPullToIreg
 	uint16_t pushPullHreg(IPAddress ip,
-		uint16_t from, uint16_t to, uint16_t numregs = 1,
-		uint16_t to, uint16_t from, uint16_t numregs = 1,
-		cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
-	uint16_t readWriteHreg(IPAddress ip,
-		uint16_t readOffset, uint16_t* value, uint16_t numregs = 1,
-		uint16_t writeOffset, uint16_t* value, uint16_t numregs = 1,
+		uint16_t from, uint16_t to, uint16_t numregs,
+		uint16_t to, uint16_t from, uint16_t numregs,
 		cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
 	*/
 };

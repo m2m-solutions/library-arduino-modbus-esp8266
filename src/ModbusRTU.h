@@ -82,5 +82,23 @@ class ModbusRTU : public Modbus {
 			writeSlaveFile(&fileNum, &startRec, &len, 1, FC_WRITE_FILE_REC, data);
 			return send(slaveId, FILE(0), cb);
 		}
-
+		uint16_t maskHreg(uint8_t slaveId, uint16_t offset, uint16_t andMask, uint16_t orMask, cbTransaction cb = nullptr) {
+			free(_frame);
+			_len = 7;
+			_frame = (uint8_t*) malloc(_len);
+			_frame[0] = FC_MASKWRITE_REG;
+			_frame[1] = offset >> 8;
+			_frame[2] = offset & 0x00FF;
+			_frame[3] = andMask >> 8;
+			_frame[4] = andMask & 0x00FF;
+			_frame[5] = orMask >> 8;
+			_frame[6] = orMask & 0x00FF;
+			return send(slaveId, HREG(offset), cb, nullptr, cb);	
+		}
+/*
+		uint16_t readWriteHreg(uint8_t slaveId,
+			uint16_t readOffset, uint16_t* value, uint16_t numregs,
+			uint16_t writeOffset, uint16_t* value, uint16_t numregs,
+			cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
+*/
 };

@@ -15,7 +15,7 @@ used in industrial automation and can be used in other areas, such as home autom
 
 The Modbus generally uses serial RS-232 or RS-485 as physical layer (then called Modbus Serial) and TCP/IP via Ethernet or WiFi (Modbus IP).
 
-In the current version the library allows the ESP8266/ESP32 operate as a master and/or slave, supporting Modbus IP via wireless network and Modbus RTU over serial. For more information about Modbus see:
+In the current version the library allows the ESP8266/ESP32 operate as a master and/or slave, supporting Modbus IP via wireless network and Modbus RTU over serial line. For more information about Modbus see:
 
 * [Modbus (From Wikipedia, the free encyclopedia)](http://pt.wikipedia.org/wiki/Modbus)
 * [MODBUS APPLICATION PROTOCOL SPECIFICATION
@@ -49,6 +49,7 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
   * 0x10 - Write Multiple Registers
   * 0x14 - **Read File Record**
   * 0x15 - **Write File Record**
+  * 0x16 - **Mask Write Register**
 
 * Callbacks for
   * Master connect (ModbusIP)
@@ -90,11 +91,13 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 - Test 0x15
 - Basic example
 - FW update exmple
++ 0x16 - Write Mask Register function
+- Test 0x16
+- 0x17 - Read/Write Registers function
+- Test 0x17
 - Slave. slavePDU use early exit by return where possible
 - Master. Check frame size against header data where possible
-// 3.2.0-DEVEL
-- 0x16 - Write Mask Register function
-- 0x17 - Read/Write Registers function
+// ToDo later
 - 0x08 - Serial Diagnostics functions
 // 2.1.0
 + Slave. Fix error response on write multiple Hregs\Coils
