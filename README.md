@@ -1,10 +1,7 @@
-# ModbusRTU and ModbusIP Master-Slave Library for ESP8266/ESP32 v3.0
+# ModbusRTU and ModbusIP Library for ESP8266/ESP32 v3.1
 
-|If this project is helpfull for you projects you can give me a glass of beer|[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z38SLGAKGM93S&source=url)|
+|If this project is helpful for your projects you can support it by a glass of beer|[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z38SLGAKGM93S&source=url)|
 |---|---|
-
-
-**Release state: DEVELOPMENT** Everything including API is subject to be changed during this stage.
 
 Visit [Releases](https://github.com/emelianov/modbus-esp8266/releases) page for stable one.
 
@@ -31,13 +28,11 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 * Supported platforms are
   * ESP8266
   * ESP32
-* Operates as
-  * slave
-  * master
-* Supports
-  * Modbus IP (TCP)
-  * Modbus RTU (RS-485)
-* Reply exception messages for all supported functions
+* Operates in any combination of multiple instances of
+  * Modbus RTU slave
+  * Modbus RTU master
+  * Modbus IP server
+  * Modbus IP client
 * Modbus functions supported:
   * 0x01 - Read Coils
   * 0x02 - Read Input Status (Read Discrete Inputs)
@@ -52,87 +47,54 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
   * 0x16 - **Mask Write Register**
 
 * Callbacks for
-  * Master connect (ModbusIP)
-  * Master/Slave disconnect (ModbusIP)
   * Read specific Register
   * Write specific Register
-  * Slave transaction finish
+  * Transaction finish
+  * Incoming connection (ModbusIP)
+  * Disconnection (ModbusIP)
 
-## Notes:
+## Notes
 
-1. When using Modbus IP the transport protocol is TCP (port 502).
-2. The offsets for registers are 0-based. So be careful when setting your supervisory system or your testing software. For example, in [ScadaBR](http://www.scadabr.com.br) offsets are 0-based, then, a register configured as 100 in the library is set to 100 in ScadaBR. On the other hand, in the [CAS Modbus Scanner](http://www.chipkin.com/products/software/modbus-software/cas-modbus-scanner/) offsets are 1-based, so a register configured as 100 in library should be 101 in this software.
-3. For API specefication refer [API.md](https://github.com/emelianov/modbus-esp8266/blob/master/API.md)
-4. Modbus RTU maximum incoming frame size is determanated by Serial buffer size (128 bytes for ESP8266 HardwareSerial, user-specified for SoftwareSerial). That is HardwareSerial limits Write Multiple HRegs for ESP slave device is limited to 63 registers, Coils - to 1008, Read Multiple HRegs/IRegs for ESP master is limited to 63, Coils/Istss - to 1008 per query.
-5. Probably it's possible to use ModbusRTU with other AVR boards using <vector> from [Standard C++ for Arduino (port of uClibc++)](https://github.com/maniacbug/StandardCplusplus).
+1. The offsets for registers are 0-based. So be careful when setting your supervisory system or your testing software. For example, in [ScadaBR](http://www.scadabr.com.br) offsets are 0-based, then, a register configured as 100 in the library is set to 100 in ScadaBR. On the other hand, in the [CAS Modbus Scanner](http://www.chipkin.com/products/software/modbus-software/cas-modbus-scanner/) offsets are 1-based, so a register configured as 100 in library should be 101 in this software.
+2. For API refer [API.md](https://github.com/emelianov/modbus-esp8266/blob/master/API.md)
+3. Modbus RTU maximum incoming frame size is determinated by HardwareSerial buffer size. For SoftwareSerial buffer must be set to 256 bytes.
+4. Probably it's possible to use ModbusRTU with other AVR boards using <vector> from [ArduinoSTL](https://github.com/mike-matera/ArduinoSTL).
+5. RS-485 transivers based on MAX-485 is working on at least up to 115200. XY-017/XY-485 I have working only up to 9600 for hardware desing reason.
 
 ## Last Changes and roadmap
 
 ```diff
-// 3.0.0-DEVEL
+// 3.1.0-DEVEL
++ 0x14 - Read File Records function
+- Test. 0x14
++ 0x15 - Write File Records function
+- Test. 0x15
+- Example. Basic file operations
+- Example. FW update
++ 0x16 - Write Mask Register function
+- Test. 0x16
+- 0x17 - Read/Write Registers function
+- Test. 0x17
+- Example. RTU to IP bridge
+- Slave. slavePDU use early exit by return where possible
+- Master. Check frame size against header data where possible
+- Master. Additional responce data validation
+- Test. push/pull functions
+- Test. Frame accuracy to specefication
+- Documentation update
+// 3.0.0
 + ModbusRTU Slave
 + ModbusRTU Master
 + Registers are now shared between Modbus* instances by default
 + Fix functions register count limits to follow Modbus specification (or RX buffer limitations)
 + ModbusRTU examples added
-+ CRC tables stored in PROGMEM
-+ ESP8266. Tested
-- Check real Serial buffer size
-+ ESP32. Tested
-+ ESP32. Tested TX control pin with MAX-485
-- ESP8266. Test TX control pin
-- Test multiple Modbus* instances
-- Implement eventSource() for ModbusRTU
-+ Documentation changes
-// 3.1.0-DEVEL
-+ 0x14 - Read File Records function
-- Test 0x14
-+ 0x15 - Write File Records function
-- Test 0x15
-- Basic example
-- FW update exmple
-+ 0x16 - Write Mask Register function
-- Test 0x16
-- 0x17 - Read/Write Registers function
-- Test 0x17
-- Slave. slavePDU use early exit by return where possible
-- Master. Check frame size against header data where possible
-// ToDo later
-- 0x08 - Serial Diagnostics functions
-// 2.1.0
-+ Slave. Fix error response on write multiple Hregs\Coils
-+ Slave. Fix writeCoil() for multiple coils
-+ Master. dropTransactions()
-+ Master. disconnect()
-+ ~ModbusIP()
-+ task() cleanup
-+ Modify examples
-+ Slave. Allow only single incoming master connection per IP
-// 2.0.1
-+ Master. Fix readCoil\Hreg\Ists\Ireg not read value from slave
-+ Fix crash on disconnect with Arduino Core 2.5.x
-// 2.0.0
-+ Remove memory allocation checking for small blocks as anyway firmware will fail if so low memory available.
-+ Change object's list implementation to *std::vector*
-+ Modbus class refactoring
-+ ModbusIP networking code refactoring and error reporting
-+ Global registers storage to share between multiple Modbus* instances
-+ Move rest of implementations from Modbus.h
-+ Modbus master implementation
-+ Move enum constants. E.g. MB_FC_READ_COIL => Modbus::FC_READ_COIL
-+ Back to marking private for onSet, onGet, addReg and Reg methods
-+ Added callback-related eventSource method, onDisconnect and transaction result callbacks
-+ Extend register addressing to 0..65535
-+ removeCoil, removeIsts, removeIreg, removeHreg, (removeReg)
-+ readCoil, readHreg, readIsts, readIreg
-+ push\pullCoil, push\pullHreg, pullIsts, pullIreg
-+ pullCoilToIsts, pullHregToIreg, pushIstsToCoil, pushIregToHreg
-+ optimize code around std::vector processing
-+ extend removeCoil/Hreg/... to remove multiple registers
-+ multiple callbacks => memory usage optimization
-+ added removeOnSetCoil\... methods
-+ added read/write/push/pullCoil/Hreg/Ireg/Ists() parameter to specify Modbus unit id
-+ added ability to auto connect to slave. Setting is global. Disabled by default.
++ Test multiple Modbus* instances
++ Change to 'uint32_t eventSource()'. Implemented for ModbusRTU and ModbusIP both
++ Allow to specify local TCP port for Slave (default is 502)
++ Allow to specify TCP port for remote Slave connection (default is 502)
++ Master\Client. Fix crash on Write Multiple Hregs
++ Master\Client. Fix crash on no callback function on read\write remote
++ Tests added
 ```
 
 ## Contributions

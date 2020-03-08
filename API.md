@@ -47,11 +47,11 @@ Processing routine. Should be periodically called form loop().
 ### Modbus RTU Specific API
 
 ```c
-bool begin(SoftwareSerial* port, int16_t txPin=-1); // for ESP8266 only
+bool begin(SoftwareSerial* port, int16_t txPin=-1); // For ESP8266 only
 bool begin(HardwareSerial* port, int16_t txPin=-1);
 ```
 
-Assign Serial port. txPin support is not tested on ESP8266 yet.
+Assing Serial port. txPin controls transmit enable for MAX-485.
 
 ```c
 void master();
@@ -70,14 +70,14 @@ Slave mode. Returns configured slave id. Master mode. Returns slave id for activ
 
 ```c
 void begin(); // Depricated. Use slave() instead.
-void slave();
+void slave(uint16_t port = MODBUSIP_PORT);
 ```
 
 ### ModBus IP Master specific
 
 ```c
 void master();
-bool connect(IPAddress ip);
+bool connect(IPAddress ip, uint16_t port = MODBUSIP_PORT);
 bool disconnect(IPAddress ip);
 bool isTransaction(uint16_t id);
 bool isConnected(IPAddress ip);
@@ -216,12 +216,16 @@ typedef bool (*cbTransaction)(Modbus::ResultCode event, uint16_t transactionId, 
 Transaction end callback function definition. For ModbusIP *data* is currently reserved. For ModbusRTU *transactionId* is also reserved.
 
 ```c
-IPAddress eventSource();
+uint32_t eventSource();
 ```
 
-*Modbus IP Master/Slave* Should be called from onGet/onSet or transaction callback function. Returns IP address of remote requesting operation or INADDR_NONE for local.
+Should be called from onGet/onSet or transaction callback function.
+
+*Modbus IP Master/Slave* Returns IP address of remote requesting operation or INADDR_NONE for local. Use IPAddress(eventSource) to operate result as IPAddress type.
 
 *Note:* For transaction callback INADDR_NONE returned in case if transaction is timedout.
+
+*Modbus RTU Master/Slave* Returns slave id. 
 
 ```c
 bool onSetCoil(uint16_t address, cbModbus cb = nullptr, uint16_t numregs = 1);

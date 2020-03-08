@@ -1,12 +1,12 @@
 /*
-    ModbusIP_ESP8266.h - Header for ModbusIP Library
+    ModbusIP Library for ESP8266/ESP32
     Copyright (C) 2014 Andr� Sarmento Barbosa
                   2017-2019 Alexander Emelianov (a.m.emelianov@gmail.com)
 */
 #pragma once
 
-#include <Modbus.h>
-#ifdef ESP8266
+#include "Modbus.h"
+#if defined(ARDUINO_ARCH_ESP8266)
  #include <ESP8266WiFi.h>
 #else
  #include <WiFi.h>
@@ -20,6 +20,7 @@
 #define MODBUSIP_MAX_CLIENTS	  4
 #define MODBUSIP_ADD_REG  1
 #define MODBUSIP_UNIQUE_CLIENTS
+#define MODBUSIP_MAX_READMS 100
 
 // Callback function Type
 typedef bool (*cbModbusConnect)(IPAddress ip);
@@ -56,6 +57,7 @@ class ModbusIP : public Modbus {
 	int16_t		transactionId = 0;  // Last started transaction. Increments on unsuccessful transaction start too.
 	int8_t n = -1;
 	bool autoConnectMode = false;
+	uint16_t slavePort = 0;
 
 	TTransaction* searchTransaction(uint16_t id);
 	void cleanup(); 	// Free clients if not connected and remove timedout transactions and transaction with forced events
@@ -74,15 +76,15 @@ class ModbusIP : public Modbus {
 	~ModbusIP();
 	bool isTransaction(uint16_t id);
 	bool isConnected(IPAddress ip);
-	bool connect(IPAddress ip);
+	bool connect(IPAddress ip, uint16_t port = MODBUSIP_PORT);
 	bool disconnect(IPAddress ip);
-	void slave();
+	void slave(uint16_t port = MODBUSIP_PORT);
 	void master();
 	void task();
 	void begin(); 	// Depricated
 	void onConnect(cbModbusConnect cb = nullptr);
 	void onDisconnect(cbModbusConnect cb = nullptr);
-	IPAddress eventSource();
+	uint32_t eventSource() override;
 	void autoConnect(bool enabled = true);
 	void dropTransactions();
 

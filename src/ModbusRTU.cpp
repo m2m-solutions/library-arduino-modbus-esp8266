@@ -5,7 +5,7 @@
 	This code is licensed under the BSD New License. See LICENSE.txt for more info.
 */
 #pragma once
-#include <ModbusRTU.h>
+#include "ModbusRTU.h"
 
 // Table of CRC values
 static const uint16_t _auchCRC[] PROGMEM = {
@@ -43,10 +43,17 @@ uint16_t ModbusRTU::crc16(uint8_t address, uint8_t* frame, uint8_t pduLen) {
     return (CRCHi << 8) | CRCLo;
 }
 
+bool ModbusRTU::begin(Stream* port) {
+    _port = port;
+    _t = 2;
+    return true;
+}
 
 bool ModbusRTU::begin(HardwareSerial* port, int16_t txPin) {
-    uint32_t baud = port->baudRate();
-	maxRegs = port->setRxBufferSize(256) / 2 - 3;
+	uint32_t baud = port->baudRate();
+	#if defined(ESP8266)
+	maxRegs = port->setRxBufferSize(MODBUS_MAX_FRAME) / 2 - 3;
+	#endif
     _port = port;
     _txPin = txPin;
     if (_txPin >= 0) {
@@ -83,10 +90,6 @@ bool ModbusRTU::rawSend(uint8_t slaveId, uint8_t* frame, uint8_t len) {
         digitalWrite(_txPin, HIGH);
         delay(1);
     }
-	for (uint8_t i = 0; i < len; i++) {
-		Serial.printf("%02X ", frame[i]);
-	}
-	Serial.println();
     _port->write(slaveId);  	//Send slaveId
     _port->write(frame, len); 	// Send PDU
     _port->write(newCrc >> 8);	//Send CRC 
@@ -128,8 +131,7 @@ void ModbusRTU::task() {
 
     uint8_t address = _port->read(); //first byte of frame = address
     _len--; // Decrease by slaveId byte
-	Serial.println(address);
-    if (isMaster && _slaveId == 0) {    // Check is slaveId is set
+    if (isMaster && _slaveId == 0) {    // Check if slaveId is set
         for (uint8_t i=0 ; i < _len ; i++) _port->read();   // Skip packet if is not expected
         _len = 0;
         return;
@@ -140,22 +142,22 @@ void ModbusRTU::task() {
         return;
     }
 
+	free(_frame);	//Just in case
     _frame = (uint8_t*) malloc(_len);
     if (!_frame) {  // Fail to allocate buffer
       for (uint8_t i=0 ; i < _len ; i++) _port->read(); // Skip packet if can't allocate buffer
       _len = 0;
       return;
     }
-    for (uint8_t i=0 ; i < _len ; i++) { _frame[i] = _port->read();   // read data + crc
-	Serial.printf("%02X\n", _frame[i]); }
+    for (uint8_t i=0 ; i < _len ; i++)
+		_frame[i] = _port->read();   // read data + crc
 	//_port->readBytes(_frame, _len);
     u_int frameCrc = ((_frame[_len - 2] << 8) | _frame[_len - 1]); // Last two byts = crc
     _len = _len - 2;    // Decrease by CRC 2 bytes
     if (frameCrc != crc16(address, _frame, _len)) {  // CRC Check
-	Serial.println("WrongCRC");
-        _len = 0;   // Cleanup if wrong crc
         free(_frame);
         _frame = nullptr;
+		_len = 0;   // Cleanup if wrong crc
         return;
     }
     if (isMaster) {
@@ -163,7 +165,7 @@ void ModbusRTU::task() {
         if ((_frame[0] & 0x7F) == _sentFrame[0]) { // Check if function code the same as requested
 			// Procass incoming frame as master
 			masterPDU(_frame, _sentFrame, _sentReg, _data);
-            if (cbEnabled && _cb) {
+            if (_cb) {
 			    _cb((ResultCode)_reply, 0, nullptr);
 		    }
             free(_sentFrame);
@@ -174,21 +176,23 @@ void ModbusRTU::task() {
         _reply = Modbus::REPLY_OFF;    // No reply if master
     } else {
         slavePDU(_frame);
-        if (address == MODBUSRTU_BROADCAST) _reply = Modbus::REPLY_OFF;    // No reply for Broadcasts
+        if (address == MODBUSRTU_BROADCAST)
+			_reply = Modbus::REPLY_OFF;    // No reply for Broadcasts
     }
     if (_reply != Modbus::REPLY_OFF)
 		rawSend(_slaveId, _frame, _len);
     // Cleanup
-    _len = 0;
     free(_frame);
     _frame = nullptr;
+    _len = 0;
 }
 
 
 bool ModbusRTU::cleanup() {
 	// Remove timeouted request and forced event
 	if (_slaveId && (millis() - _timestamp > MODBUSRTU_TIMEOUT)) {
-		_cb(Modbus::EX_TIMEOUT, 0, nullptr);
+		if (_cb)
+			_cb(Modbus::EX_TIMEOUT, 0, nullptr);
 		free(_sentFrame);
         _sentFrame = nullptr;
         _data = nullptr;

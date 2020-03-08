@@ -5,24 +5,24 @@
 	This code is licensed under the BSD New License. See LICENSE.txt for more info.
 */
 #pragma once
-#include <Modbus.h>
+#include "Modbus.h"
 #include <HardwareSerial.h>
 #if defined(ESP8266)
  #include <SoftwareSerial.h>
 #endif
 
 #define MODBUSRTU_BROADCAST 0
-#define MB_RESERVE 248
-#define MB_SERIAL_BUFFER 256
-#define MB_MAX_TIME 10
+#define MODBUSRTU_RESERVE 248
+#define MODBUSRTU_SERIAL_BUFFER 256
+#define MODBUSRTU_MAX_TIME 10
 #define MODBUSRTU_TIMEOUT 1000
 #define MODBUSRTU_ADD_REG
-//#define MB_STATIC_FRAME 1
+//#define MODBUS_STATIC_FRAME 1
 
 class ModbusRTU : public Modbus {
     protected:
         Stream* _port;
-        int16_t   _txPin;
+        int16_t   _txPin = -1;
 		unsigned int _t;	// inter-frame delay in mS
 		uint32_t t = 0;
 		bool isMaster = false;
@@ -43,14 +43,16 @@ class ModbusRTU : public Modbus {
 		bool cleanup(); 	// Free clients if not connected and remove timedout transactions and transaction with forced events
 		uint16_t crc16(uint8_t address, uint8_t* frame, uint8_t pdulen);
     public:
-	 #if defined(ESP8266)
+	 #if defined(ARDUINO_ARCH_ESP8266)
 	 	bool begin(SoftwareSerial* port, int16_t txPin=-1);
 	 #endif
 	 	bool begin(HardwareSerial* port, int16_t txPin=-1);
+		bool begin(Stream* port);
         void task();
 		void master() { isMaster = true; };
 		void slave(uint8_t slaveId) {_slaveId = slaveId;};
 		uint8_t slave() { return _slaveId; }
+		uint32_t eventSource() override {return _slaveId;}
 		uint16_t writeHreg(uint8_t slaveId, uint16_t offset, uint16_t value, cbTransaction cb = nullptr);
 		uint16_t writeCoil(uint8_t slaveId, uint16_t offset, bool value, cbTransaction cb = nullptr);
 		uint16_t readCoil(uint8_t slaveId, uint16_t offset, bool* value, uint16_t numregs = 1, cbTransaction cb = nullptr);
