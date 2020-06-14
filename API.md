@@ -1,4 +1,4 @@
-# Modbus Master-Slave Library for ESP8266/ESP32
+# Modbus Library for ESP8266/ESP32
 
 ## Common API
 
@@ -172,14 +172,14 @@ uint16_t readFileRec(IPAddress ip, uint16_t fileNum, uint16_t startRec, uint16_t
 uint16_t readFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
 ```
 
-Read single file record from slave. startRec and len is in terms of registers (2 bytes).
+Read single file record from slave. startRec and len is in terms of registers (2 bytes). API call to read multiple records regions within single query (as it possible by Modbus specification) is not implemented but suported at server side code.
 
 ```c
 uint16_t writeFileRec(IPAddress ip, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
 uint16_t writeFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr);
 ```
 
-Write single file record from slave. startRec and len is in terms of registers (2 bytes).
+Write single file record from slave. startRec and len is in terms of registers (2 bytes). API call to read multiple records regions within single query (as it possible by Modbus specification) is not implemented but suported at server side code.
 
 ## Callbacks API
 
@@ -247,6 +247,13 @@ bool onGetIreg(uint16_t address, cbModbus cb = nullptr, uint16_t numregs = 1);
 Assign callback function on register query event. Multiple sequental registers can be affected by specifing `numregs` parameter.
 
 ```c
+bool onFile(Modbus::ResultCode (*cb)(Modbus::FunctionCode, uint16_t, uint16_t, uint16_t, uint8_t*));
+typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint16_t fileNum, uint16_t recNumber, uint16_t recLength, uint8_t* frame);
+```
+
+Unlike other callbacks `onFile` callback function should perform full processing of request data. That is callback function should fill `*frame` with returned data according to `func`, `filenum`, `recNumber` and `recLength`. Also it should return corresponding error code. For example Modbus::EX_SUCCESS on success operation. Callback called multiple times if query contains multiple registers regions to read/write till first callback error.
+
+```c
 bool removeOnGetCoil(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 1);
 bool removeOnSetCoil(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 1);
 bool removeOnGetHreg(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 1);
@@ -255,6 +262,7 @@ bool removeOnGetIsts(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 
 bool removeOnSetIsts(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 1);
 bool removeOnGetIreg(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 1);
 bool removeOnSetIreg(uint16_t offset, cbModbus cb = nullptr, uint16_t numregs = 1);
+//bool removeOnFile();
 ```
 
 Disconnect specific callback function or all callbacks of the type if cb=NULL.
