@@ -3,6 +3,7 @@
 # Datatypes (KEYWORD1)
 ModbusRTU	KEYWORD1
 ModbusIP	KEYWORD1
+ModbusIP_ESP8266    KEYWORD1
 Modbus	KEYWORD1
 TRegister	KEYWORD1
 TTransaction	KEYWORD1
@@ -12,6 +13,8 @@ ResultCode	KEYWORD1
 # Methods and Functions (KEYWORD2)
 master	KEYWORD2
 slave	KEYWORD2
+client  KEYWORD2
+server  KEYWORD2
 task	KEYWORD2
 onConnect	KEYWORD2
 onDisconnect	KEYWORD2
@@ -71,6 +74,8 @@ isCoil	KEYWORD2
 isHreg	KEYWORD2
 isIsts	KEYWORD2
 isIreg	KEYWORD2
+begin   KEYWORD2
+setBaudrate KEYWORD2
 
 # Constants and Macros (LITERAL1)
 BIT_VAL	LITERAL1

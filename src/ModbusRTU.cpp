@@ -1,6 +1,6 @@
 /*
     ModbusRTU Library for ESP8266/ESP32
-    Copyright (C) 2019 Alexander Emelianov (a.m.emelianov@gmail.com)
+    Copyright (C) 2019-2020 Alexander Emelianov (a.m.emelianov@gmail.com)
 	https://github.com/emelianov/modbus-esp8266
 	This code is licensed under the BSD New License. See LICENSE.txt for more info.
 */
@@ -43,6 +43,14 @@ uint16_t ModbusRTU::crc16(uint8_t address, uint8_t* frame, uint8_t pduLen) {
     return (CRCHi << 8) | CRCLo;
 }
 
+void ModbusRTU::setBaudrate(uint32_t baud) {
+    if (baud > 19200) {
+        _t = 2;
+    } else {
+        _t = (35000/baud) + 1;
+    }
+}
+
 bool ModbusRTU::begin(Stream* port) {
     _port = port;
     _t = 2;
@@ -50,20 +58,22 @@ bool ModbusRTU::begin(Stream* port) {
 }
 
 bool ModbusRTU::begin(HardwareSerial* port, int16_t txPin) {
-	uint32_t baud = port->baudRate();
-	#if defined(ESP8266)
-	maxRegs = port->setRxBufferSize(MODBUS_MAX_FRAME) / 2 - 3;
-	#endif
+    uint32_t baud = 0;
+    #if defined(ESP32) || defined(ESP8266)
+    // baudRate() only available with ESP32+ESP8266
+    baud = port->baudRate();
+    #else
+    baud = 9600;
+    #endif
+	setBaudrate(baud);
+    #if defined(ESP8266)
+    maxRegs = port->setRxBufferSize(MODBUS_MAX_FRAME) / 2 - 3;
+    #endif
     _port = port;
     _txPin = txPin;
     if (_txPin >= 0) {
         pinMode(_txPin, OUTPUT);
         digitalWrite(_txPin, LOW);
-    }
-    if (baud > 19200) {
-        _t = 2;
-    } else {
-        _t = (35000/baud) + 1;
     }
     return true;
 }
@@ -74,12 +84,7 @@ bool ModbusRTU::begin(SoftwareSerial* port, int16_t txPin) {
     _port = port;
     if (txPin >= 0)
         port->setTransmitEnablePin(txPin);
-    if (baud > 19200) {
-        _t = 2;
-		//port->enableIntTx(false);
-    } else {
-        _t = (35000/baud) + 1;
-    }
+	setBaudrate(baud);
     return true;
 }
 #endif
@@ -96,7 +101,7 @@ bool ModbusRTU::rawSend(uint8_t slaveId, uint8_t* frame, uint8_t len) {
 	#endif
     _port->write(slaveId);  	//Send slaveId
     _port->write(frame, len); 	// Send PDU
-    _port->write(newCrc >> 8);	//Send CRC 
+    _port->write(newCrc >> 8);	//Send CRC
     _port->write(newCrc & 0xFF);//Send CRC
 	#ifdef ESP32
     portEXIT_CRITICAL(&mux);
@@ -164,8 +169,15 @@ void ModbusRTU::task() {
       _len = 0;
       return;
     }
-    for (uint8_t i=0 ; i < _len ; i++)
+    for (uint8_t i=0 ; i < _len ; i++) {
 		_frame[i] = _port->read();   // read data + crc
+		#if defined(MODBUSRTU_DEBUG)
+		Serial.printf("%02X ", _frame[i]);
+		#endif
+	}
+	#if defined(MODBUSRTU_DEBUG)
+	Serial.println();
+	#endif
 	//_port->readBytes(_frame, _len);
     u_int frameCrc = ((_frame[_len - 2] << 8) | _frame[_len - 1]); // Last two byts = crc
     _len = _len - 2;    // Decrease by CRC 2 bytes

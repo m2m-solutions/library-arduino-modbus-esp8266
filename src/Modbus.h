@@ -1,7 +1,7 @@
 /*
-    Modbus base Library
+    Modbus.h - Header for Modbus Core Library
     Copyright (C) 2014 Andr� Sarmento Barbosa
-                  2017-2019 Alexander Emelianov (a.m.emelianov@gmail.com)
+                  2017-2020 Alexander Emelianov (a.m.emelianov@gmail.com)
 */
 #pragma once
 
@@ -17,9 +17,9 @@
 #endif
 
 
-//#define MODBUS_GLOBAL_REGS
+#define MODBUS_GLOBAL_REGS
 #define MODBUS_FILES
-//#define MODBUS_MAX_REGS     32
+//#define MB_MAX_REGS     32
 #define MODBUS_MAX_FRAME   253
 #define COIL(n) (TAddress){TAddress::COIL, n}
 #define ISTS(n) (TAddress){TAddress::ISTS, n}
@@ -47,6 +47,9 @@ struct TAddress {
     bool operator==(const TAddress &obj) const { // TAddress == TAddress
 	    return type == obj.type && address == obj.address;
 	}
+    bool operator!=(const TAddress &obj) const { // TAddress != TAddress
+        return type != obj.type || address != obj.address;
+    }
     TAddress& operator++() {     // ++TAddress
         address++;
         return *this;

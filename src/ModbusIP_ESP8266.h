@@ -1,12 +1,14 @@
 /*
     ModbusIP Library for ESP8266/ESP32
     Copyright (C) 2014 Andr� Sarmento Barbosa
-                  2017-2019 Alexander Emelianov (a.m.emelianov@gmail.com)
+                  2017-2020 Alexander Emelianov (a.m.emelianov@gmail.com)
 */
 #pragma once
 
-#include "Modbus.h"
-#if defined(ARDUINO_ARCH_ESP8266)
+#if defined(ESP32) || defined(ESP8266)
+
+#include <Modbus.h>
+#ifdef ESP8266
  #include <ESP8266WiFi.h>
 #else
  #include <WiFi.h>
@@ -51,13 +53,13 @@ class ModbusIP : public Modbus {
 	};
 	cbModbusConnect cbConnect = nullptr;
 	cbModbusConnect cbDisconnect = nullptr;
-	WiFiServer* server = nullptr;
-	WiFiClient* client[MODBUSIP_MAX_CLIENTS];
+	WiFiServer* tcpserver = nullptr;
+	WiFiClient* tcpclient[MODBUSIP_MAX_CLIENTS];
 	std::vector<TTransaction> _trans;
 	int16_t		transactionId = 0;  // Last started transaction. Increments on unsuccessful transaction start too.
 	int8_t n = -1;
 	bool autoConnectMode = false;
-	uint16_t slavePort = 0;
+	uint16_t serverPort = 0;
 
 	TTransaction* searchTransaction(uint16_t id);
 	void cleanup(); 	// Free clients if not connected and remove timedout transactions and transaction with forced events
@@ -78,10 +80,12 @@ class ModbusIP : public Modbus {
 	bool isConnected(IPAddress ip);
 	bool connect(IPAddress ip, uint16_t port = MODBUSIP_PORT);
 	bool disconnect(IPAddress ip);
-	void slave(uint16_t port = MODBUSIP_PORT);
-	void master();
+	void server(uint16_t port = MODBUSIP_PORT);
+	inline void slave(uint16_t port = MODBUSIP_PORT) { server(port); }	// Depricated
+	void client();
+	inline void master() { client(); }		// Depricated
 	void task();
-	void begin(); 	// Depricated
+	inline void begin() { server(); }; 	// Depricated
 	void onConnect(cbModbusConnect cb = nullptr);
 	void onDisconnect(cbModbusConnect cb = nullptr);
 	uint32_t eventSource() override;
@@ -149,3 +153,5 @@ class ModbusIP : public Modbus {
 		cbTransaction cb = nullptr, uint8_t unit = MODBUSIP_UNIT);
 	*/
 };
+
+#endif

@@ -1,6 +1,6 @@
-# ModbusRTU and ModbusIP Library for ESP8266/ESP32 v3.1
+# ModbusRTU and ModbusIP Library for ESP8266/ESP32
 
-|If this project is helpful for your projects you can support it by a glass of beer|[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z38SLGAKGM93S&source=url)|
+|If the library is helpful for your projects you can support it by a glass of beer|[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Z38SLGAKGM93S&source=url)|
 |---|---|
 
 Visit [Releases](https://github.com/emelianov/modbus-esp8266/releases) page for stable one.
@@ -12,7 +12,7 @@ used in industrial automation and can be used in other areas, such as home autom
 
 The Modbus generally uses serial RS-232 or RS-485 as physical layer (then called Modbus Serial) and TCP/IP via Ethernet or WiFi (Modbus IP).
 
-In the current version the library allows the ESP8266/ESP32 operate as a master and/or slave, supporting Modbus IP via wireless network and Modbus RTU over serial line. For more information about Modbus see:
+For more information about Modbus see:
 
 * [Modbus (From Wikipedia, the free encyclopedia)](http://pt.wikipedia.org/wiki/Modbus)
 * [MODBUS APPLICATION PROTOCOL SPECIFICATION
@@ -28,11 +28,13 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 * Supported platforms are
   * ESP8266
   * ESP32
+  * STM32F103 and probably others (Modbus RTU only)
 * Operates in any combination of multiple instances of
   * Modbus RTU slave
   * Modbus RTU master
   * Modbus IP server
   * Modbus IP client
+* Reply exception messages for all supported functions
 * Modbus functions supported:
   * 0x01 - Read Coils
   * 0x02 - Read Input Status (Read Discrete Inputs)
@@ -47,6 +49,8 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
   * 0x16 - **Mask Write Register**
 
 * Callbacks for
+  * Client connect (ModbusIP)
+  * Server/Client disconnect (ModbusIP)
   * Read specific Register
   * Write specific Register
   * Transaction finish
@@ -82,19 +86,26 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 - Test. push/pull functions
 - Test. Frame accuracy to specefication
 - Documentation update
+// 3.0.1
++ ModbusRTU: ESP32 possible send failure fix
++ ModbusRTU: Non-ESP devices support
++ Restriction to registers count removed
++ Added bridge example
 // 3.0.0
 + ModbusRTU Slave
 + ModbusRTU Master
 + Registers are now shared between Modbus* instances by default
 + Fix functions register count limits to follow Modbus specification (or RX buffer limitations)
-+ ModbusRTU examples added
++ ModbusRTU: Examples added
 + Test multiple Modbus* instances
 + Change to 'uint32_t eventSource()'. Implemented for ModbusRTU and ModbusIP both
-+ Allow to specify local TCP port for Slave (default is 502)
-+ Allow to specify TCP port for remote Slave connection (default is 502)
-+ Master\Client. Fix crash on Write Multiple Hregs
-+ Master\Client. Fix crash on no callback function on read\write remote
++ Client: Allow to specify local TCP port (default is 502)
++ Server: Allow to specify TCP remote port for connection (default is 502)
++ Master\Client: Fix crash on Write Multiple Hregs
++ Master\Client: Fix crash on no callback function on read\write remote
 + Tests added
+// ToDo later
+- ModbusIP: Support for non-ESP boards (using W5x00)
 ```
 
 ## Contributions
