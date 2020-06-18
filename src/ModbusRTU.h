@@ -34,6 +34,9 @@ class ModbusRTU : public Modbus {
 		uint8_t* _sentFrame = nullptr;
 		TAddress _sentReg = COIL(0);
 		uint16_t maxRegs = 0x007D;
+		#ifdef ESP32
+		portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+		#endif
 		bool send(uint8_t slaveId, TAddress startreg, cbTransaction cb, void* data = nullptr, bool waitResponse = true);
 		// Prepare and send ModbusRTU frame. _frame buffer and _len should be filled with Modbus data
 		// slaveId - slave id
@@ -77,13 +80,13 @@ class ModbusRTU : public Modbus {
 		uint16_t pushIregToHreg(uint8_t slaveId, uint16_t to, uint16_t from, uint16_t numregs = 1, cbTransaction cb = nullptr);
 
 		uint16_t readFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr) {
-			if (startRec > 0x270F) return false;
-			readSlaveFile(&fileNum, &startRec, &len, 1, FC_READ_FILE_REC);
+			if (startRec > 0x270F) return 0;
+			if (!readSlaveFile(&fileNum, &startRec, &len, 1, FC_READ_FILE_REC)) return 0;
 			return send(slaveId, FILE(0), cb, data);
 		}
 		uint16_t writeFileRec(uint8_t slaveId, uint16_t fileNum, uint16_t startRec, uint16_t len, uint8_t* data, cbTransaction cb = nullptr) {
-			if (startRec > 0x270F) return false;
-			writeSlaveFile(&fileNum, &startRec, &len, 1, FC_WRITE_FILE_REC, data);
+			if (startRec > 0x270F) return 0;
+			if (!writeSlaveFile(&fileNum, &startRec, &len, 1, FC_WRITE_FILE_REC, data)) return 0;
 			return send(slaveId, FILE(0), cb);
 		}
 		uint16_t maskHreg(uint8_t slaveId, uint16_t offset, uint16_t andMask, uint16_t orMask, cbTransaction cb = nullptr) {

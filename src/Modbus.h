@@ -253,7 +253,7 @@ class Modbus {
         bool readSlaveFile(uint16_t* fileNum, uint16_t* startRec, uint16_t* len, uint8_t count, FunctionCode fn) {
         // fileNum - sequental array of files numbers to read
         // startRec - array of strart records for each file
-        // len - count of records to read in terms of register size (2 bytes) for each file
+        // len - array of counts of records to read in terms of register size (2 bytes) for each file
         // count - count of records to be compose in the single request
         // fn - Modbus function. Assumed to be 0x14
 	        _len = count * 7 + 2;
@@ -279,13 +279,13 @@ class Modbus {
         bool writeSlaveFile(uint16_t* fileNum, uint16_t* startRec, uint16_t* len, uint8_t count, FunctionCode fn, uint8_t* data) {
         // fileNum - sequental array of files numbers to read
         // startRec - array of strart records for each file
-        // len - count of records to read in terms of register size (2 bytes) for each file
+        // len - array of counts of records to read in terms of register size (2 bytes) for each file
         // count - count of records to be compose in the single request
         // fn - Modbus function. Assumed to be 0x15
         // data - sequental set of data records
 	        _len = 2;
             for (uint8_t i = 0; i < count; i++) {
-                _len += len[i] * 2 + 2;
+                _len += len[i] * 2 + 7;
             }
             if (_len > MODBUS_MAX_FRAME) return false;
             free(_frame);

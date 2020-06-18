@@ -70,22 +70,21 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 ```diff
 // 3.1.0-DEVEL
 + 0x14 - Read File Records function
-- Test. 0x14
++ Test. 0x14
 + 0x15 - Write File Records function
-- Test. 0x15
++ Test. 0x15
 - Example. Basic file operations
 - Example. FW update
 + 0x16 - Write Mask Register function
 - Test. 0x16
 - 0x17 - Read/Write Registers function
 - Test. 0x17
-- Example. RTU to IP bridge
-- Slave. slavePDU use early exit by return where possible
-- Master. Check frame size against header data where possible
-- Master. Additional responce data validation
-- Test. push/pull functions
-- Test. Frame accuracy to specefication
-- Documentation update
+- Slave/Server: slavePDU use early exit by return where possible
+- Master/Client: Check frame size against header data where possible
+- Master/Client: Additional responce data validation
+- Test: push/pull functions
+- Test: Frame accuracy to specefication
+- Documentation: Update
 // 3.0.1
 + ModbusRTU: ESP32 possible send failure fix
 + ModbusRTU: Non-ESP devices support
@@ -104,7 +103,7 @@ V1.02](http://www.modbus.org/docs/Modbus_over_serial_line_V1_02.pdf)
 + Master\Client: Fix crash on Write Multiple Hregs
 + Master\Client: Fix crash on no callback function on read\write remote
 + Tests added
-// ToDo later
+// 4.0.0
 - ModbusIP: Support for non-ESP boards (using W5x00)
 ```
 
