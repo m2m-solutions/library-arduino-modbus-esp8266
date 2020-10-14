@@ -189,7 +189,7 @@ void ModbusTCPTemplate<SERVER, CLIENT>::task() {
 	if (tcpserver) {
 		CLIENT c;
 		// WiFiServer.available() == Ethernet.accept() and should wrapped to get code to be compatible with Ethernet library (See ModbusTCP.h code).
-		// WiFiServer.accept() != Ethernet.accept() internally
+		// WiFiServer.available() != Ethernet.available() internally
 		while (millis() - taskStart < MODBUSIP_MAX_READMS && (c = tcpserver->accept())) {
 			CLIENT* currentClient = new CLIENT(c);
 			if (!currentClient || !currentClient->connected())
